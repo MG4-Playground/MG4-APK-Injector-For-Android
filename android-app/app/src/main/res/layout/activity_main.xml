@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="车机应用商店 · 第三方 APK 注入"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="手机开热点 → 车机连接 → 本应用劫持商店请求（Android 需 root）"
+        android:textSize="12sp"
+        android:textColor="#666666"
+        android:paddingBottom="8dp" />
+
+    <TextView
+        android:id="@+id/tvNet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="正在探测网络…"
+        android:textSize="11sp"
+        android:typeface="monospace"
+        android:background="#FFFFFF"
+        android:padding="8dp"
+        android:paddingBottom="4dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="4dp">
+
+        <EditText
+            android:id="@+id/etHotspotIp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="热点 IP"
+            android:textSize="12sp"
+            android:background="#FFFFFF"
+            android:padding="6dp"
+            android:layout_marginEnd="4dp"
+            android:inputType="text" />
+
+        <EditText
+            android:id="@+id/etVpnIp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="VPN IP"
+            android:textSize="12sp"
+            android:background="#FFFFFF"
+            android:padding="6dp"
+            android:inputType="text" />
+
+        <Button
+            android:id="@+id/btnDetect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="重探测"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="未运行"
+        android:textSize="12sp"
+        android:paddingTop="2dp"
+        android:paddingBottom="6dp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="目标 APK："
+        android:textSize="12sp" />
+
+    <EditText
+        android:id="@+id/etApkName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="未选择"
+        android:textSize="12sp"
+        android:enabled="false"
+        android:background="#FFFFFF"
+        android:padding="8dp"
+        android:layout_marginBottom="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <Button
+            android:id="@+id/btnPick"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="选择 APK"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnToggle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="启动劫持" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="运行日志"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp" />
+
+    <ScrollView
+        android:id="@+id/svLog"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:background="#1E1E1E"
+        android:padding="8dp">
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#00FF00"
+            android:textSize="11sp"
+            android:typeface="monospace"
+            android:textIsSelectable="true" />
+    </ScrollView>
+
+</LinearLayout>

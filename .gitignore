@@ -1,0 +1,17 @@
+# 构建产物
+*.apk
+*.aab
+build/
+**/build/
+# 本地配置（机器相关 SDK 路径，需自行创建 local.properties）
+local.properties
+# Gradle 缓存
+.gradle/
+# IDE
+.idea/
+*.iml
+# 日志
+*.log
+# 操作系统
+.DS_Store
+Thumbs.db
