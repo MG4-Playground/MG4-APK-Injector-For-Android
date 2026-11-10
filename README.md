@@ -71,7 +71,7 @@ sdk.dir=C:/Users/<你的用户名>/AppData/Local/Android/Sdk
 ### 3.3 构建 Debug APK
 
 ```bash
-cd MG4-Android/android-app
+cd MG4-APK-Injector-For-Android/android-app
 
 # 方式 A：用项目自带的 Gradle Wrapper（推荐，免装 Gradle）
 ./gradlew assembleDebug
@@ -88,14 +88,14 @@ gradle assembleDebug
 ### 3.4 产物位置
 
 ```
-MG4-Android/android-app/app/build/outputs/apk/debug/app-debug.apk
+MG4-APK-Injector-For-Android/android-app/app/build/outputs/apk/debug/app-debug.apk
 ```
 
 ### 3.5 安装到手机
 
 ```bash
 # 通过 ADB 安装（手机已连电脑并开启 USB 调试 + 已授权 root）
-adb install -r MG4-Android/android-app/app/build/outputs/apk/debug/app-debug.apk
+adb install -r MG4-APK-Injector-For-Android/android-app/app/build/outputs/apk/debug/app-debug.apk
 
 # 或：把 app-debug.apk 拷到手机，在文件管理器里手动安装
 ```
@@ -105,7 +105,7 @@ adb install -r MG4-Android/android-app/app/build/outputs/apk/debug/app-debug.apk
 ### 3.6 离线回归测试（可选，无真机时守回归）
 
 ```bash
-cd MG4-Android/android-app/app/src/test
+cd MG4-APK-Injector-For-Android/android-app/app/src/test
 python run_all.py
 ```
 
@@ -159,7 +159,7 @@ App 界面有实时日志。关键行：
 
 ## 六、源码结构
 
-路径以本仓库 `MG4-Android/android-app/` 为基准：
+路径以本仓库 `MG4-APK-Injector-For-Android/android-app/` 为基准：
 
 ```
 android-app/
@@ -184,8 +184,11 @@ android-app/
 │   └── nullsafety_check.py        ★ 源码空安全静态检查 (防 NPE 回归)
 └── app/src/main/assets/
     ├── chain.pem                  叶子 + 3 张中间件 (覆盖 3 个信任库)
+    │                              SAN: 详情域名 + *.z-onesoft.com(通配) + 旧 OSS 下载域名
     ├── leaf.key.pem               叶子私钥
     └── store_rules.json           规则 (serve / patch)
+certs/                             证书重签工具 (sign_leaf.py / recover_keys.py / keys / inter)
+│                                  + README.md：到期或换域名时重签，产物直接写回 assets/
 ```
 
 **关键实现要点（踩坑沉淀）：**
@@ -223,11 +226,47 @@ v7.3 在 iptables 的 443 重定向上加了 `-d <热点IP>` 目的地址限制�
 （`iptables -t nat -A CARSTORE -p tcp --dport 443 -j REDIRECT --to-ports <httpsPort>`，
 不限目的地址），即恢复 v7.2 的劫持能力，同时保留上述全部崩溃修复。
 
+### 2026-11 修复：应用商店更换下载 CDN 域名（本次）
+
+- **现象**：启动劫持后，车机商店显示「更新」但点安装失败；车机日志报
+  `javax.net.ssl.SSLPeerUnverifiedException: Hostname prod-dp-public-es33-tos.z-onesoft.com
+  not verified`。
+- **根因**：商店把 APK 下载域名从 `prod-dp-public-es33.oss-cn-shanghai.aliyuncs.com`（旧）
+  换成了 `prod-dp-public-es33-tos.z-onesoft.com`（新）。由于 v7.4 是「按端口 443 全量
+  重定向」，新域名的 443 连接仍被本机 MITM 拦截；但本机证书 SAN 没有覆盖新域名，车机做
+  主机名校验时抛上述异常 → 下载失败、安装失败。
+- **修复**：
+  1. 证书 SAN 加入 `*.z-onesoft.com`（通配，覆盖当前及今后 z-onesoft.com 下所有子域，
+     含下载 CDN 与详情域名），并保留旧 OSS 域名；
+  2. `store_rules.json` 新增对新下载域名的 `serve` 规则（路径前缀 `/ecology/`），
+     把本机 APK 投给它。
+- **验证**：重签证书 `notAfter` 延至 2027-11-10；APK 内嵌证书 SAN 含 `*.z-onesoft.com`，
+  且 `store_rules.json` 含两条 `/ecology/` serve 规则。
+
+### 证书续签 / 新增劫持域名
+
+证书默认有效期约 2 年（`notBefore` 回拨 1 年以容忍车机时钟偏差）。到期或商店再换域名时，
+用仓库自带脚本重签（无需外部秘密，eMudhra 弱密钥中间证书私钥已在 `certs/keys/` 还原）：
+
+```bash
+cd MG4-APK-Injector-For-Android/certs
+pip install cryptography          # 仅首次
+python sign_leaf.py              # 直接写回 android-app/.../assets/{chain.pem,leaf.key.pem}
+```
+
+- 要改劫持域名：编辑 `certs/sign_leaf.py` 的 `DOMAINS` 后重签；同时在
+  `store_rules.json` 的 `serve`/`patch` 加该域名。
+- 通配符 `*.z-onesoft.com` 已覆盖该域下所有子域，store 在 z-onesoft.com 下再换下载域名时
+  **一般只需**在 `store_rules.json` 加一条 serve 规则，无需重签。
+- 私钥/还原记录（`certs/keys/`）属敏感材料，勿外泄。详见 `certs/README.md`。
+
 ### 已知限制
-全量 443 MITM 会使非商店域名（speech / baidu / httpdns 等）的 TLS 握手失败，
-这可能正是「安装第三方 APK 失败」的原因。若需在不破坏详情页劫持的前提下让安装也成功，
-后续可在 `HttpsService` 做 **SNI 选择性隧道**：解析 ClientHello 的 SNI，命中商店域名才
-MITM，否则原样 TCP 隧道到真实服务器。该改动风险较高，需单独迭代。
+全量 443 MITM 会使**非商店且非 z-onesoft.com** 的域名（speech / baidu / httpdns 等）TLS
+握手失败。这类域名不在证书 SAN 内，车机不会信任。若需在不破坏详情页/下载劫持的前提下让这些
+请求也正常，后续可在 `HttpsService` 做 **SNI 选择性隧道**：解析 ClientHello 的 SNI，命中
+商店域名才 MITM，否则原样 TCP 隧道到真实服务器。该改动风险较高，需单独迭代。
+（注：商店侧的 HTTPDNS 已通过「全量 443 重定向 + 证书通配」解决——只要域名在 SAN 内，
+无论车机解析到真实 IP 还是热点 IP，本机都能 MITM 并投/改对应请求。）
 
 **与 Windows 版的关系**：证书（`chain.pem` / `leaf.key.pem`）、规则（`store_rules.json` 的
 serve/patch 语义）、目标 APK 三样与 Windows 版**完全共用**，仅传输层实现不同
